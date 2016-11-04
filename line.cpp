@@ -11,18 +11,19 @@ bool isjiichu(const string& s)
 line::line(const std::string & s)
 {
 	//if(s.empty())
-		
+	//std::cout << s << std::endl;
 	ss = s;
 	using std::string;
-	string sp(s.begin() + 1, s.end() - 1);
-	//std::cout << sp << std::endl;
+	string sp;
 	bool flag = false;
-	for(auto i: sp)
-		if (i == ' ' || i == '(')
-		{
-			flag = true;
-			break;
-		}
+	if (ss[0] != '(')
+		 sp =ss;
+	else
+	{
+		sp=string(s.begin() + 1, s.end() - 1);
+		flag = true;
+	} 
+	//std::cout << sp << std::endl;
 	if (!flag)
 	{
 
@@ -77,6 +78,11 @@ line::~line()
 {
 }
 
+std::shared_ptr<environment> line::getenv() const
+{
+	return env;
+}
+
 bool line::isnumber() const
 {
 	return tagged("number");
@@ -129,13 +135,12 @@ bool line::empty() const
 
 int line::stoi() const
 {
-	return std::stoi(std::string(ss.begin()+1,ss.end()-1));
+	return std::stoi(ss);
 }
 
 std::string line::ssymbol() const
 {
-	std::string p(ss.begin() + 1, ss.end() - 1);
-	return p;
+	return std::string(ss);
 }
 
 const line & line::at(const int i) const
@@ -143,13 +148,59 @@ const line & line::at(const int i) const
 	return part[i];
 }
 
-void line::print(std::ostream & os)
+void line::print(std::ostream & os)const
 {
 	using std::endl;
 	os << tag <<":"<< endl;
 	os << ss << endl;
 	for (int i = 0; i < part.size(); ++i)
 		part[i].print(os);
+}
+
+void line::addarg(const line& p)
+{
+	using std::string;
+	if (p.ss.empty())
+		return;
+	else if (this->ss.empty())
+		*this = p;
+	else if (this->isapplication())
+	{
+		string pp(this->ss.begin(), this->ss.end() - 1);
+		pp += ' ';
+		pp += p.ss;
+		pp += ')';
+		*this=line(pp);
+	}
+	else
+	{
+		string pp = "(";
+		pp += this->ss;
+		pp += ' ';
+		pp += p.ss;
+		pp += ')';
+		*this=line(pp);
+	}
+}
+
+void line::changepara(const int k)
+{
+	line p = this->at(1);
+	int l = p.size() + k;
+	std::cout << k<<std::endl<<l << std::endl;
+	line ll(p.at(l));
+	for (int i = l + 1; i < p.size(); ++i)
+		ll.addarg(p.at(i));
+	std::string pl = "("+this->at(0).ssymbol()+" ";
+	if (ll.isapplication())
+		pl += ll.ssymbol();
+	else
+		pl += "(" + ll.ssymbol() + ")";
+	for (auto i = 2; i < this->size(); ++i)
+		pl += " " + this->at(i).ssymbol();
+	pl += ")";
+	*this = line(pl, this->env);
+	return;
 }
 
 inline void line::put(std::string&  s)
@@ -170,21 +221,15 @@ inline void line::put(std::string&  s)
 			tag = "define";
 		else if (s == "if")
 			tag = "if";
-		else if (s == "clause")
-			tag = "clause";
+		else if (s == "cons")
+			tag = "cons";
 		else
 			tag = "application";
-		std::string temp = s;
-		if (s[0] != '(')
-			temp = '(' + temp + ')';
-		part.push_back(line(temp));
+		part.push_back(line(s));
 		s.clear();
 		return;
 	}
-	std::string temp = s;
-	if (s[0] != '(')
-		temp = '(' + temp + ')';
-	part.push_back(line(temp)); 
+	part.push_back(line(s));
 	//std::cout << s << std::endl;
 	s.clear();
 }
@@ -202,4 +247,20 @@ bool operator<(const line &a, const line &b)
 bool operator==(const line &a, const line &b)
 {
 	return a.ss == b.ss;
+}
+
+std::ostream& operator<<(std::ostream& os, const line& s)
+{
+	//os << s.tag << std::endl;
+	//os << s.ss << std::endl;
+	//if (s.ispro())
+		//s.env->print();
+	//return os;
+	if (s.isnumber())
+		os << s.stoi();
+	else if (s.issymbol())
+		os << s.ssymbol();
+	else
+		os << "ok";
+	return os;
 }

@@ -1,5 +1,7 @@
 #include "environment.h"
 
+
+
 environment::environment(shared_ptr<map<string, line>> p)
 {
 	frame.push_back(p);
@@ -22,8 +24,11 @@ int environment::size() const
 
 void environment::insert(const string &a, const line &b)
 {
+	line l = b;
+	if (l.issymbol()&&l.issymbol())
+		l = search(l.ssymbol());
 	auto p = frame.back();
-	(*p)[a] = b;
+	(*p)[a] = l;
 }
 
 void environment::push(shared_ptr<map<string, line>> a)
@@ -36,12 +41,28 @@ line environment::search(const string & p) const
 	for (auto i : frame)
 		if ((*i).find(p) != (*i).end())
 			return (*i)[p];
-	return line("(error)");
+	return line(p);
 }
 
 shared_ptr<map<string, line>> environment::top()const
 {
 	return frame.back();
+}
+
+void environment::print(std::ostream &os) const
+{
+	//std::cout << "---------------" << std::endl;
+	for (int i = 0; i < frame.size(); ++i)
+	{
+		//std::cout << i << std::endl;
+		auto j = frame[i]->cbegin();
+		while (j != frame[i]->cend())
+		{
+			std::cout << j->first << "   " << j->second << std::endl;
+			++j;
+		}
+	}
+	return;
 }
 
 environment::~environment()

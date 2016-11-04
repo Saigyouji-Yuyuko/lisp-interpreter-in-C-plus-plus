@@ -11,8 +11,11 @@ using std::shared_ptr;
 class environment
 {
 public:
-	environment()=default;
-	environment(const environment& a) { *this = a; }
+	environment():frame(1)
+	{
+		frame[0] = std::make_shared<map<string, line> >();
+	}
+	environment(const environment& a) :environment(){ *this = a; }
 	environment(shared_ptr<map<string,line> >);
 	shared_ptr<map<string, line> > at(int)const;
 	void pop();
@@ -21,6 +24,7 @@ public:
 	void push(shared_ptr<map<string, line> >);
 	line search(const string&)const;
 	shared_ptr<map<string, line>> top()const;
+	void print(std::ostream &os = std::cout)const;
 	~environment();
 private:
 	std::vector<shared_ptr<map<string, line> > > frame;

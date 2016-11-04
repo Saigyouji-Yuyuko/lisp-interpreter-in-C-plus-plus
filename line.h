@@ -1,5 +1,6 @@
 #pragma once
-
+#include<memory>
+#include<iostream>
 #include<string>
 #include<vector>
 #include"environment.h"
@@ -8,10 +9,11 @@ class line
 {
 public:
 	line() = default;
+	line(int i):line(std::to_string(i)){}
 	line(const std::string&);
 	line(const line& a) { *this = a; }
 	line(const std::string& a, const std::string& b) :line(b) { tag = a; }
-	line(const line& a, shared_ptr<environment> b) :line(a) { tag = "procedure"; env = b; }
+	line(const line& a, std::shared_ptr<environment> b) :line(a) { tag = "procedure"; env = b; }
 	~line();
 	bool isnumber ()const;
 	bool issymbol()const;
@@ -25,10 +27,15 @@ public:
 	bool empty()const;
 	int stoi()const;
 	std::string ssymbol()const;
+	std::shared_ptr<environment> getenv()const;
 	const line& at(const int)const;
-	void print(std::ostream&);
+	void print(std::ostream& os = std::cout)const;
 	friend bool operator<(const line&, const line&);
 	friend bool operator==(const line&, const line&);
+	friend std::ostream& operator<<(std::ostream&, const line&);
+	void addarg(const line& p);
+	void changepara(const int);
+	//line& operator+= (const line&);
 private:
 	void put(std::string&);
 	bool tagged(const std::string&)const;
