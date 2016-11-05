@@ -5,6 +5,7 @@
 #include<vector>
 #include"environment.h"
 class environment;
+class line;
 class line
 {
 public:
@@ -16,12 +17,16 @@ public:
 	line(const line& a, std::shared_ptr<environment> b) :line(a) { tag = "procedure"; env = b; }
 	~line();
 	bool isnumber ()const;
+	bool iscons()const;
 	bool issymbol()const;
 	bool isjichu()const;
 	bool ispro()const;
 	bool isif()const;
+	bool iscond()const;
+	bool isset()const;
 	bool islambda()const;
 	bool isdefine()const;
+	bool isquote()const;
 	bool isapplication()const;
 	int size()const;
 	bool empty()const;
@@ -39,7 +44,7 @@ public:
 private:
 	void put(std::string&);
 	bool tagged(const std::string&)const;
-	std::vector<line> part;
+	std::vector<std::shared_ptr<line> > part;
 	std::string ss;
 	std::string tag;
 	std::shared_ptr<environment> env;

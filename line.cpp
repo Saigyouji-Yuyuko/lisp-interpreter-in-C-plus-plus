@@ -1,10 +1,12 @@
 #include "line.h"
 #include<stack>
 #include<iostream>
+const string primer[] = { "+" ,"-" ,"*" ,"/" ,"%" ,"=" ,">" ,"<" ,"print" ,"car","cdr","null?","number?","symbol?","pair?","atom?","read","string?"};
 bool isjiichu(const string& s)
 {
-	if (s == "+" || s == "-" || s == "*" || s == "/" || s == "=" || s == ">" || s == "<")
-		return true;
+	for(auto i:primer)
+		if(s == i)
+			return true;
 	return false;
 }
 
@@ -88,6 +90,11 @@ bool line::isnumber() const
 	return tagged("number");
 }
 
+bool line::iscons() const
+{
+	return tagged("cons");
+}
+
 bool line::issymbol() const
 {
 	return tagged("symbol");
@@ -108,6 +115,16 @@ bool line::isif() const
 	return tagged("if");
 }
 
+bool line::iscond() const
+{
+	return tagged("cond");
+}
+
+bool line::isset() const
+{
+	return tagged("set!");
+}
+
 bool line::islambda() const
 {
 	return tagged("lambda");
@@ -116,6 +133,11 @@ bool line::islambda() const
 bool line::isdefine() const
 {
 	return tagged("define");
+}
+
+bool line::isquote() const
+{
+	return tagged("quote");
 }
 
 bool line::isapplication() const
@@ -145,7 +167,7 @@ std::string line::ssymbol() const
 
 const line & line::at(const int i) const
 {
-	return part[i];
+	return *part[i];
 }
 
 void line::print(std::ostream & os)const
@@ -154,7 +176,7 @@ void line::print(std::ostream & os)const
 	os << tag <<":"<< endl;
 	os << ss << endl;
 	for (int i = 0; i < part.size(); ++i)
-		part[i].print(os);
+		part[i]->print(os);
 }
 
 void line::addarg(const line& p)
@@ -208,7 +230,7 @@ inline void line::put(std::string&  s)
 	if (s.empty())
 		return;
 	
-	if (part.empty())
+	if (this->empty())
 	{
 		//std::cout << s << std::endl;
 		if (s == "lambda")
@@ -217,19 +239,31 @@ inline void line::put(std::string&  s)
 			tag = "procedure";
 		else if (isjiichu(s))
 			tag = "jichu";
+		else if (s == "cond")
+			tag = "cond";
+		else if (s == "set!")
+			tag = "set!";
 		else if (s == "define")
 			tag = "define";
+		else if (s == "define-syntax")
+			tag = "define-syntax";
+		else if (s == "call/cc")
+			tag = "call/cc";
 		else if (s == "if")
 			tag = "if";
+		else if (s == "quote")
+			tag = "quote";
 		else if (s == "cons")
 			tag = "cons";
+		else if (s == "let")
+			tag = "let";
 		else
 			tag = "application";
-		part.push_back(line(s));
+		part.push_back(std::make_shared<line>(s));
 		s.clear();
 		return;
 	}
-	part.push_back(line(s));
+	part.push_back(std::make_shared<line>(s));
 	//std::cout << s << std::endl;
 	s.clear();
 }
@@ -251,11 +285,11 @@ bool operator==(const line &a, const line &b)
 
 std::ostream& operator<<(std::ostream& os, const line& s)
 {
-	//os << s.tag << std::endl;
-	//os << s.ss << std::endl;
+	os << s.tag << std::endl;
+	os << s.ss << std::endl;
 	//if (s.ispro())
 		//s.env->print();
-	//return os;
+	return os;
 	if (s.isnumber())
 		os << s.stoi();
 	else if (s.issymbol())
