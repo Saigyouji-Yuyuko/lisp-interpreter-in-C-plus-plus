@@ -14,7 +14,7 @@ public:
 	line(const std::string&);
 	line(const line& a) { *this = a; }
 	line(const std::string& a, const std::string& b) :line(b) { tag = a; }
-	line(const line& a, std::shared_ptr<environment> b) :line(a) { tag = "procedure"; env = b; }
+	line(const line& a, std::shared_ptr<environment> b) :line(a) { tag = "procedure"; env = std::make_shared<environment>(*b); ss.replace(ss.find("lambda"), 6, "procedure"); }
 	~line();
 	bool isnumber ()const;
 	bool iscons()const;
@@ -23,6 +23,7 @@ public:
 	bool ispro()const;
 	bool isif()const;
 	bool iscond()const;
+	bool islet()const;
 	bool isset()const;
 	bool islambda()const;
 	bool isdefine()const;
@@ -33,6 +34,8 @@ public:
 	int stoi()const;
 	std::string ssymbol()const;
 	std::shared_ptr<environment> getenv()const;
+	std::string gettag()const;
+	void changeenv(environment& env1);
 	const line& at(const int)const;
 	void print(std::ostream& os = std::cout)const;
 	friend bool operator<(const line&, const line&);

@@ -31,12 +31,20 @@ istream& input(istream& is, string& s)
 		getline(is, ss);
 		if (ss.empty())
 			continue;
-		for (auto i : ss)
+		for (auto i = ss.begin(); i != ss.end();++i)
 		{
-			if (i == '(')
+			if (*i == '(')
 				check.push(1);
-			else if (i == ')')
+			else if (*i == ')')
 				check.pop();
+			else if (*i == ';')
+			{
+				string pp(ss.begin(), i - 1);
+				ss = pp;
+				break;
+			}
+			else if (*i == '|')
+				throw(runtime_error("retext! "));
 		}
 		if(!s.empty())
 			s += " ";
@@ -81,6 +89,8 @@ line eval_jichu(const line& s,environment& env)
 			return line("0");
 		else return line("1");
 	}
+	if (s.at(0).ssymbol() == "eval")
+		return first;
 	if (s.at(0).ssymbol() == "car" && first.iscons())
 		return eval(first.at(1),env);
 	if (s.at(0).ssymbol() == "cdr"&& first.iscons())
@@ -91,6 +101,8 @@ line eval_jichu(const line& s,environment& env)
 		throw(runtime_error("It's too little arg for"+s.at(0).ssymbol()));
 	line second = eval(s.at(2), env);
 	//cout << first.stoi() << " " << first.stoi() << endl;
+	//if (s.at(0).ssymbol() == "apply")
+		//return first;
 	if(!first.isnumber()||!second.isnumber())
 		throw(runtime_error("This op"+s.at(0).ssymbol()+"only need number"));
 	if (s.at(0).ssymbol() == "+")
@@ -126,6 +138,14 @@ line make_lambda(const line& s)
 	p += s.at(2).ssymbol();
 	p += ")";
 	return line(p);
+}
+line eval_pro(const line& s, environment& env)
+{
+	line pp(s);
+	pp.changeenv(env);
+	cout << "add env :" << s;
+	env.print();
+	return pp;
 }
 line eval_define(const line& s, environment& env)
 {
@@ -164,7 +184,8 @@ line eval_lambda(const line& s, environment& env)
 }
 line argument(const line& s, environment& env)
 {
-	line p(eval(s.at(1),env));
+	line p(eval(s.at(1), env));
+		//cout << eval(s.at(1), env) << endl;
 	for (int i = 2; i < s.size(); ++i)
 		p.addarg(eval(s.at(i),env));
 	if (!p.isapplication())
@@ -173,11 +194,17 @@ line argument(const line& s, environment& env)
 }
 int bind(const line& a,const line& b, shared_ptr<map<string, line> >& p)
 {
+	//cout << "-------------------" << endl;
 	//cout << a << endl << b << endl;
+	//cout << "-------------------" << endl;
 	if (a.size() == b.size())
 	{
 		for (int i = 0; i < a.size(); ++i)
+		{
 			(*p)[a.at(i).ssymbol()] = b.at(i);
+			//cout << b.at(i) << endl;
+		}
+		//cout << "-------------------" << endl;
 		return 0;
 	}
 	else if (a.size() > b.size())
@@ -198,23 +225,78 @@ line list_eval(const line& s, environment& env)
 	//cout << eval(s.size() - 1, env) << endl;
 	return eval(s.at(s.size() - 1), env);
 }
-/*line cond_to_if(const line& s)
+line cond_to_if(const line& s)
 {
-	string p = "(if ";
-		for()
-}*/
+	string p;
+	bool t = false;
+	for (int i = 1; i < s.size(); ++i)
+	{
+		cout << s.at(i) << endl;
+		if (s.at(i).at(0).ssymbol() == "else")
+		{
+			if (i != s.size() - 1)
+				throw(runtime_error("It's error that \"else\" not last"));
+			else
+			{
+				p += s.at(i).at(1).ssymbol();
+				t = true;
+			}
+				
+		}
+		else
+		{
+			p += "(if ";
+			p += s.at(i).at(0).ssymbol()+" ";
+			p += s.at(i).at(1).ssymbol()+" ";
+		}
+	}
+	int ll = s.size() - (t ? 2 : 1);
+	for (int i = 1; i <= ll; ++i)
+		p += ")";
+	cout << p << endl;
+	return line(p);
+}
 line eval_set(const line& s, environment env)
 {
 	if (env.search(s.at(1).ssymbol()) == s.at(1).ssymbol())
 		throw(runtime_error("Can not find " + s.at(1).ssymbol() + "in environment"));
 	return eval_define(s, env);
 }
+line let_to_lambda(const line& s)
+{
+	string p = "((lambda ";
+	line para = s.at(1).at(0).at(0), argu = s.at(1).at(0).at(1);
+	for (int i = 1; i < s.at(1).size(); ++i)
+	{
+		para.addarg(s.at(1).at(i).at(0));
+		argu.addarg(s.at(1).at(i).at(1));
+	}
+	if (!para.isapplication())
+		p += "(" + para.ssymbol() + ") ";
+	else
+		p += para.ssymbol()+" ";
+	p += s.at(2).ssymbol()+")";
+	if (!argu.isapplication())
+		p += " " + argu.ssymbol() + " )";
+	else
+	{
+		string temp(argu.ssymbol());
+		p += string(temp.begin() + 1, temp.end() - 1) + " )";
+	}
+	return line(p);
+}
 line apply(const line& s,const line& arg)
 {
+	//cout <<"apply:  "<<s<<endl<<"argu:   "<< arg << endl;
+	if (!s.getenv())
+		throw(runtime_error("maybe somewhere error"));
+	//s.getenv()->print();
 	if (!s.ispro())
-		throw(runtime_error("it is not a procedure    " + s.ssymbol()));
+		throw(runtime_error("it is not a procedure    " + s.ssymbol()+" \nthe tag is "+s.gettag()+"  \nand the arg is  "+arg.ssymbol()));
 	shared_ptr<environment> p = make_shared<environment>(*(s.getenv()));
+	//cout << "ddd" << endl;
 	shared_ptr<map<string, line> > l = make_shared<map<string,line> >();
+	
 	int k = bind(s.at(1), arg, l);
 	//cout << k << endl;
 	p->push(l);
@@ -233,11 +315,17 @@ line apply(const line& s,const line& arg)
 }
 line eval(const line& s, environment& env)
 {
-	//cout << s << endl;
-	if (s.isnumber() || s.ispro())
+	//cout <<"eval:  "<< s << endl;
+	if (s.isnumber()|| s.ispro())
 		return s;
+//	else if ()
+		//return eval_pro(s, env);
 	else if (s.iscons())
 		return eval_cons(s, env);
+	else if (s.iscond())
+		return eval(cond_to_if(s), env);
+	else if (s.islet())
+		return eval(let_to_lambda(s), env);
 	else if (s.isquote())
 		return s.ssymbol();
 	else if (s.issymbol())
@@ -262,21 +350,27 @@ int main()
 	environment env2;
 	//chushihua(env);
 	//line("(+)").print();
-	while (input(cin,s))
+	while (1)
 	{
 		env2 = env;
 		try
 		{
+			input(cin, s);
+			if (s == "end")
+			{
+				cout << "Good bye" << endl;
+			}
 			//cout << s << endl;
 			line p(s);
 			//p.print();
 			cout << endl << eval(p, env) << endl;
-			env.print();
+			//cout << line(p,nullptr) << endl;;
+			//env.print();
 			
 		}
 		catch (runtime_error err)
 		{
-			cerr << err.what() << endl;
+			cerr <<"error:"<< err.what() << endl;
 			env = env2;
 			continue;
 		}

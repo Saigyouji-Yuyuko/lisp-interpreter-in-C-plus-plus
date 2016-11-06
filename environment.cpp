@@ -38,9 +38,9 @@ void environment::push(shared_ptr<map<string, line>> a)
 
 line environment::search(const string & p) const
 {
-	for (auto i : frame)
-		if ((*i).find(p) != (*i).end())
-			return (*i)[p];
+	for (auto i = frame.rbegin(); i != frame.rend();++i)
+		if ((*i)->find(p) != (*i)->end())
+			return (*(*i))[p];
 	return line(p);
 }
 
@@ -51,7 +51,8 @@ shared_ptr<map<string, line>> environment::top()const
 
 void environment::print(std::ostream &os) const
 {
-	//std::cout << "---------------" << std::endl;
+	std::cout << "---------------" << std::endl;
+	std::cout << "environment:  " << std::endl;
 	for (int i = 0; i < frame.size(); ++i)
 	{
 		//std::cout << i << std::endl;
@@ -62,6 +63,7 @@ void environment::print(std::ostream &os) const
 			++j;
 		}
 	}
+	std::cout << "---------------" << std::endl;
 	return;
 }
 

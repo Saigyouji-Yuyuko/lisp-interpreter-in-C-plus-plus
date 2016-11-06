@@ -1,7 +1,7 @@
 #include "line.h"
 #include<stack>
 #include<iostream>
-const string primer[] = { "+" ,"-" ,"*" ,"/" ,"%" ,"=" ,">" ,"<" ,"print" ,"car","cdr","null?","number?","symbol?","pair?","atom?","read","string?"};
+const string primer[] = { "+" ,"-" ,"*" ,"/" ,"%" ,"=" ,">" ,"<" ,"print" ,"car","cdr","null?","number?","symbol?","pair?","atom?","read","string?","eval","apply"};
 bool isjiichu(const string& s)
 {
 	for(auto i:primer)
@@ -23,6 +23,7 @@ line::line(const std::string & s)
 	else
 	{
 		sp=string(s.begin() + 1, s.end() - 1);
+		//std::cout << sp << std::endl;
 		flag = true;
 	} 
 	//std::cout << sp << std::endl;
@@ -39,6 +40,7 @@ line::line(const std::string & s)
 			tag = "symbol";
 		else
 			tag = "number";
+		ss = sp;
 	}
 	else
 	{
@@ -74,6 +76,7 @@ line::line(const std::string & s)
 		}
 		put(temp);
 	}
+	//std::cout << tag << std::endl << ss << std::endl;
 }
 
 line::~line()
@@ -83,6 +86,17 @@ line::~line()
 std::shared_ptr<environment> line::getenv() const
 {
 	return env;
+}
+
+std::string line::gettag() const
+{
+	return tag;
+}
+
+void line::changeenv(environment & env1) 
+{
+	env = std::make_shared<environment>(env1);
+	return;
 }
 
 bool line::isnumber() const
@@ -118,6 +132,11 @@ bool line::isif() const
 bool line::iscond() const
 {
 	return tagged("cond");
+}
+
+bool line::islet() const
+{
+	return tagged("let");
 }
 
 bool line::isset() const
@@ -188,23 +207,21 @@ void line::addarg(const line& p)
 		*this = p;
 	else if (this->isapplication())
 	{
-		string pp(this->ss.begin(), this->ss.end() - 1);
-		pp += ' ';
-		pp += p.ss;
-		pp += ')';
-		*this=line(pp);
+		this->ss.replace(ss.size()-1,1," "+p.ss+")");
+		this->part.push_back(std::make_shared<line>(p));
+		this->tag = "application";
 	}
 	else
 	{
-		string pp = "(";
-		pp += this->ss;
-		pp += ' ';
-		pp += p.ss;
-		pp += ')';
-		*this=line(pp);
+		line temp = *this;
+		this->ss.clear();
+		this->part.clear();
+		this->ss = "( " + temp.ss + " " + p.ss + " )";
+		this->part.push_back(std::make_shared<line>(temp));
+		this->part.push_back(std::make_shared<line>(p));
+		this->tag = "application";
 	}
 }
-
 void line::changepara(const int k)
 {
 	line p = this->at(1);
@@ -285,7 +302,7 @@ bool operator==(const line &a, const line &b)
 
 std::ostream& operator<<(std::ostream& os, const line& s)
 {
-	os << s.tag << std::endl;
+	os << s.tag << "    ";
 	os << s.ss << std::endl;
 	//if (s.ispro())
 		//s.env->print();
