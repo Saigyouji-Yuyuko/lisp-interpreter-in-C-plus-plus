@@ -104,6 +104,11 @@ bool line::isnumber() const
 	return tagged("number");
 }
 
+bool line::islist() const
+{
+	return tagged("list");
+}
+
 bool line::iscons() const
 {
 	return tagged("cons");
@@ -189,6 +194,25 @@ const line & line::at(const int i) const
 	return *part[i];
 }
 
+line line::changeapplication()
+{
+	if (this->isapplication())
+		return line(*this);
+	else
+	{
+		line temp;
+		temp.ss = "(" + this->ss + ")";
+		temp.part.push_back(std::make_shared<line>(*this));
+		temp.tag = "application";
+		return temp;
+	}
+}
+
+void line::changetag(const std::string & s)
+{
+	tag = s;
+}
+
 void line::print(std::ostream & os)const
 {
 	using std::endl;
@@ -216,7 +240,7 @@ void line::addarg(const line& p)
 		line temp = *this;
 		this->ss.clear();
 		this->part.clear();
-		this->ss = "( " + temp.ss + " " + p.ss + " )";
+		this->ss = "(" + temp.ss + " " + p.ss + ")";
 		this->part.push_back(std::make_shared<line>(temp));
 		this->part.push_back(std::make_shared<line>(p));
 		this->tag = "application";
@@ -242,6 +266,14 @@ void line::changepara(const int k)
 	return;
 }
 
+void line::clear()
+{
+	ss.clear();
+	part.clear();
+	env = nullptr;
+	tag.clear();
+}
+
 inline void line::put(std::string&  s)
 {
 	if (s.empty())
@@ -260,6 +292,8 @@ inline void line::put(std::string&  s)
 			tag = "cond";
 		else if (s == "set!")
 			tag = "set!";
+		else if (s == "list")
+			tag = "list";
 		else if (s == "define")
 			tag = "define";
 		else if (s == "define-syntax")

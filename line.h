@@ -17,6 +17,7 @@ public:
 	line(const line& a, std::shared_ptr<environment> b) :line(a) { tag = "procedure"; env = std::make_shared<environment>(*b); ss.replace(ss.find("lambda"), 6, "procedure"); }
 	~line();
 	bool isnumber ()const;
+	bool islist()const;
 	bool iscons()const;
 	bool issymbol()const;
 	bool isjichu()const;
@@ -37,12 +38,15 @@ public:
 	std::string gettag()const;
 	void changeenv(environment& env1);
 	const line& at(const int)const;
+	line changeapplication();
+	void changetag(const std::string&);
 	void print(std::ostream& os = std::cout)const;
 	friend bool operator<(const line&, const line&);
 	friend bool operator==(const line&, const line&);
 	friend std::ostream& operator<<(std::ostream&, const line&);
 	void addarg(const line& p);
 	void changepara(const int);
+	void clear();
 	//line& operator+= (const line&);
 private:
 	void put(std::string&);

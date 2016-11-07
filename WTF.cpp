@@ -12,23 +12,26 @@
 #include"environment.h"
 using namespace std;
 line eval(const line&, environment&);
-line apply_primitive(const line& s, const string& op)
+line apply_primitive(const line& s, const string& op)  // ??
 {
-	string pp = "(";
-	pp += op + " ";
-	pp += s.ssymbol()+")";
-	return line(pp);
+	line pp("op");
+	pp.addarg(s);
+	pp.changetag("jichu");
+	return pp;
 }
 istream& input(istream& is, string& s)
 {
 	fflush(stdin);
 	//cout << "?????????????????????????????" << endl;
+	cout << ">welcome to the stupid scheme:" << endl;
+	//cout << ">";
 	s.clear();
 	stack<int> check;
 	string ss;
 	do
 	{
 		getline(is, ss);
+		//cout  << ">";
 		if (ss.empty())
 			continue;
 		for (auto i = ss.begin(); i != ss.end();++i)
@@ -61,8 +64,8 @@ line eval_jichu(const line& s,environment& env)
 	if (s.at(0).ssymbol() == "print")
 	{
 		cout << first << endl;
-		if (s.iscons())
-			eval(apply_primitive(eval(s.at(2), env), "print"), env);
+		//if (s.iscons())
+			//eval(apply_primitive(eval(s.at(2), env), "print"), env); //error
 		return line("nothint", "()");
 	}
 	if (s.at(0).ssymbol() == "number?")
@@ -104,42 +107,96 @@ line eval_jichu(const line& s,environment& env)
 	//if (s.at(0).ssymbol() == "apply")
 		//return first;
 	if(!first.isnumber()||!second.isnumber())
-		throw(runtime_error("This op"+s.at(0).ssymbol()+"only need number"));
-	if (s.at(0).ssymbol() == "+")
-		return line(to_string(first.stoi() + second.stoi()));
+		throw(runtime_error("This op"+s.at(0).ssymbol()+"only need number now"));
 	if (s.at(0).ssymbol() == "%")
 		return line(to_string(first.stoi() % second.stoi()));
-	if (s.at(0).ssymbol() == "-")
-		return line(to_string(first.stoi() - second.stoi()));
-	if (s.at(0).ssymbol() == "*")
-		return line(to_string(first.stoi() * second.stoi()));
-	if (s.at(0).ssymbol() == "/")
-		return line(to_string(first.stoi() / second.stoi()));
 	if (s.at(0).ssymbol() == ">")
 		return line(to_string(first.stoi() > second.stoi()));
 	if (s.at(0).ssymbol() == "<")
 		return line(to_string(first.stoi() < second.stoi()));
 	if (s.at(0).ssymbol() == "=")
 		return line(to_string(first.stoi() == second.stoi()));
+	if (s.at(0).ssymbol() == "+")
+	{
+		int temp = first.stoi() + second.stoi();
+		if (s.size() > 3)
+		{
+			for (int i = 3; i < s.size(); ++i)
+			{
+				line p = eval(s.at(i),env);
+				if (p.isnumber())
+					temp += p.stoi();
+				else
+					throw(runtime_error("This op" + s.at(0).ssymbol() + "only need number now"));
+			}
+		}
+		return line(temp);
+	}
+		
+	if (s.at(0).ssymbol() == "-")
+	{
+		int temp = first.stoi() - second.stoi();
+		if (s.size() > 3)
+		{
+			for (int i = 3; i < s.size(); ++i)
+			{
+				line p = eval(s.at(i), env);
+				if (p.isnumber())
+					temp -= p.stoi();
+				else
+					throw(runtime_error("This op" + s.at(0).ssymbol() + "only need number now"));
+			}
+		}
+		return line(temp);
+	}
+	if (s.at(0).ssymbol() == "*")
+	{
+		int temp = first.stoi() * second.stoi();
+		if (s.size() > 3)
+		{
+			for (int i = 3; i < s.size(); ++i)
+			{
+				line p = eval(s.at(i), env);
+				if (p.isnumber())
+					temp *= p.stoi();
+				else
+					throw(runtime_error("This op" + s.at(0).ssymbol() + "only need number now"));
+			}
+		}
+		return line(temp);
+	}
+	if (s.at(0).ssymbol() == "/")
+	{
+		int temp = first.stoi() / second.stoi();
+		if (s.size() > 3)
+		{
+			for (int i = 3; i < s.size(); ++i)
+			{
+				line p = eval(s.at(i), env);
+				if (p.isnumber())
+					temp /= p.stoi();
+				else
+					throw(runtime_error("This op" + s.at(0).ssymbol() + "only need number now"));
+			}
+		}
+			return line(temp);
+	}
 	else
 		throw(runtime_error("It's wrong of the writer"));
 	
 }
-line make_lambda(const line& s)
+line make_lambda(const line& s) 
 {
 	line pp(s.at(1).at(1));
-	string p = "(lambda ";
+	line p("lambda ");
 	for (int i = 2; i < s.at(1).size(); ++i)
 		pp.addarg(s.at(1).at(i));
-	if(pp.issymbol())
-		p +="("+pp.ssymbol()+")";
-	else 
-		p += pp.ssymbol();
-	p += s.at(2).ssymbol();
-	p += ")";
-	return line(p);
+	p.addarg(pp);
+	p .addarg(s.at(2).ssymbol());
+	p.changetag("lambda");
+	return p;
 }
-line eval_pro(const line& s, environment& env)
+line eval_pro(const line& s, environment& env)//no use
 {
 	line pp(s);
 	pp.changeenv(env);
@@ -165,16 +222,30 @@ line eval_define(const line& s, environment& env)
 }
 line eval_cons(const line& s, environment& env)
 {
-	string sa= "(cons ";
+	line sa("cons ");
 	line p1 = eval(s.at(1),env);
 	line p2 = eval(s.at(2),env);
-	sa += p1.ssymbol() +" "+ p2.ssymbol() + ")";
+	sa.addarg(p1);
+	sa.addarg(p2);
+	sa.changetag("cons");
+	return sa;
+}
+line list_to_cons(const line& s,int p)
+{
+	if (p == s.size())
+		return line("(quote ())");
+	line sa("cons");
+	sa.addarg(s.at(p));
+	sa.addarg(list_to_cons(s,p+1));
+	sa.changetag("cons");
 	return sa;
 }
 line eval_if(const line& s, environment& env)
 {
 	if (eval(s.at(1), env).stoi() == 1)
 		return eval(s.at(2), env);
+	if (s.size() < 4)
+		return line("0");
 	return eval(s.at(3), env);
 }
 line eval_lambda(const line& s, environment& env)
@@ -189,7 +260,7 @@ line argument(const line& s, environment& env)
 	for (int i = 2; i < s.size(); ++i)
 		p.addarg(eval(s.at(i),env));
 	if (!p.isapplication())
-		return line("(" + p.ssymbol() + ")");
+		return p.changeapplication();
 	return p;
 }
 int bind(const line& a,const line& b, shared_ptr<map<string, line> >& p)
@@ -225,36 +296,25 @@ line list_eval(const line& s, environment& env)
 	//cout << eval(s.size() - 1, env) << endl;
 	return eval(s.at(s.size() - 1), env);
 }
-line cond_to_if(const line& s)
+line make_if(const line& s, int p)
 {
-	string p;
-	bool t = false;
-	for (int i = 1; i < s.size(); ++i)
+	line t("if");
+	if (s.at(p).at(0).ssymbol() == "else")
 	{
-		cout << s.at(i) << endl;
-		if (s.at(i).at(0).ssymbol() == "else")
-		{
-			if (i != s.size() - 1)
-				throw(runtime_error("It's error that \"else\" not last"));
-			else
-			{
-				p += s.at(i).at(1).ssymbol();
-				t = true;
-			}
-				
-		}
+		if (p != s.size() - 1)
+			throw(runtime_error("It's error that \"else\" not last"));
 		else
-		{
-			p += "(if ";
-			p += s.at(i).at(0).ssymbol()+" ";
-			p += s.at(i).at(1).ssymbol()+" ";
-		}
+			return s.at(p).at(1);
 	}
-	int ll = s.size() - (t ? 2 : 1);
-	for (int i = 1; i <= ll; ++i)
-		p += ")";
-	cout << p << endl;
-	return line(p);
+	else
+	{
+		t.addarg(s.at(p).at(0));
+		t.addarg(s.at(p).at(1));
+		if (p < s.size() - 1)
+			t.addarg(make_if(s, p + 1));
+		t.changetag("if");
+		return t;
+	}
 }
 line eval_set(const line& s, environment env)
 {
@@ -264,26 +324,23 @@ line eval_set(const line& s, environment env)
 }
 line let_to_lambda(const line& s)
 {
-	string p = "((lambda ";
+	line p ("lambda");
 	line para = s.at(1).at(0).at(0), argu = s.at(1).at(0).at(1);
 	for (int i = 1; i < s.at(1).size(); ++i)
 	{
 		para.addarg(s.at(1).at(i).at(0));
 		argu.addarg(s.at(1).at(i).at(1));
 	}
-	if (!para.isapplication())
-		p += "(" + para.ssymbol() + ") ";
-	else
-		p += para.ssymbol()+" ";
-	p += s.at(2).ssymbol()+")";
+	p.addarg(para.changeapplication());
+	p.addarg(s.at(2));
+	p.changetag("lambda");
+	p=p.changeapplication();
 	if (!argu.isapplication())
-		p += " " + argu.ssymbol() + " )";
+		p.addarg(argu);
 	else
-	{
-		string temp(argu.ssymbol());
-		p += string(temp.begin() + 1, temp.end() - 1) + " )";
-	}
-	return line(p);
+		for (int i = 0; i < argu.size(); ++i)
+			p.addarg(argu.at(i));
+	return p;
 }
 line apply(const line& s,const line& arg)
 {
@@ -322,8 +379,10 @@ line eval(const line& s, environment& env)
 		//return eval_pro(s, env);
 	else if (s.iscons())
 		return eval_cons(s, env);
+	else if (s.islist())
+		return eval(list_to_cons(s,1),env);
 	else if (s.iscond())
-		return eval(cond_to_if(s), env);
+		return eval(make_if(s,1), env);
 	else if (s.islet())
 		return eval(let_to_lambda(s), env);
 	else if (s.isquote())
@@ -356,15 +415,14 @@ int main()
 		try
 		{
 			input(cin, s);
-			if (s == "end")
-			{
-				cout << "Good bye" << endl;
-			}
+			if (s == "end")	
+				break;
 			//cout << s << endl;
 			line p(s);
 			//p.print();
+			cout << "------------------------" << endl << "result:" << endl;
 			cout << endl << eval(p, env) << endl;
-			//cout << line(p,nullptr) << endl;;
+			//cout << list_to_cons(p,1) << endl;;
 			//env.print();
 			
 		}
@@ -375,5 +433,6 @@ int main()
 			continue;
 		}
 	}
+	cout << "Good bye" << endl;
     return 0;
 }
